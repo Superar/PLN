@@ -4,6 +4,7 @@ import string
 import os
 import random
 import matplotlib.pyplot as plt
+import numpy as np
 from nltk.tokenize import word_tokenize
 
 PARSER = argparse.ArgumentParser()
@@ -28,13 +29,26 @@ def get_count(tokens):
 
 
 def plot_zipf_curve(count, filename):
-    count = count[:35]
     X = list(range(len(count)))
     labels, Y = zip(*count)
 
     plt.figure()
+
+    # Zipf
     plt.plot(X, Y)
-    plt.xticks(X, labels, rotation=90)
+
+    # Luhn
+    data = list()
+    for i in X:
+        data.extend(Y[i] * [i])
+    cut_min = np.round(np.percentile(data, 50))
+    cut_max = np.round(np.percentile(data, 75))
+    plt.axvline(x=cut_min, color='red')
+    plt.axvline(x=cut_max, color='red')
+
+    ticks = [int(np.round(np.percentile(X, i))) for i in range(0, 100, 3)]
+    ticks_labels = [labels[int(t)] for t in ticks]
+    plt.xticks(ticks, ticks_labels, rotation=90)
     plt.xlabel('Palavra')
     plt.ylabel('Frequência absoluta')
     plt.title('Curva de frequência das palavras no texto ' + filename)
@@ -43,19 +57,10 @@ def plot_zipf_curve(count, filename):
     plt.savefig(save_filepath)
 
 
-def analyse_text(filepath):
-    with open(filepath) as f:
-        plain = f.read()
-        tokens = tokenize(plain)
-        count = get_count(tokens)
-
-        plot_zipf_curve(count, os.path.split(filepath)[1])
-
-
 def analyse_random_texts(dataset_path, num_samples):
     words = list()
 
-    for _file in os.listdir(dataset):
+    for _file in os.listdir(dataset_path):
         filename = dataset_path + '/' + os.fsdecode(_file)
         with open(filename) as f:
             tokens = tokenize(f.read())
@@ -65,16 +70,25 @@ def analyse_random_texts(dataset_path, num_samples):
     plot_zipf_curve(count, 'randomized.txt')
 
 
-if __name__ == "__main__":
-    ARGS = PARSER.parse_args()
-    dataset = os.fsencode(ARGS.dataset)
+def main(args):
+    dataset = os.fsencode(args.dataset)
 
     if not os.path.exists('figs'):
         os.makedirs('figs')
 
-    if not ARGS.randomize:
+    if not args.randomize:
         for _file in os.listdir(dataset):
-            filename = ARGS.dataset + '/' + os.fsdecode(_file)
-            analyse_text(filename)
+            filename = args.dataset + '/' + os.fsdecode(_file)
+            with open(filename) as f:
+                plain = f.read()
+                tokens = tokenize(plain)
+                count = get_count(tokens)
+
+                plot_zipf_curve(count, os.path.split(filename)[1])
     else:
-        analyse_random_texts(ARGS.dataset, ARGS.randomize)
+        analyse_random_texts(args.dataset, args.randomize)
+
+
+if __name__ == "__main__":
+    ARGS = PARSER.parse_args()
+    main(ARGS)
