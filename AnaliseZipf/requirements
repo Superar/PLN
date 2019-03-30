@@ -1,2 +1,6 @@
 scrapy
 selenium
+matplotlib
+numpy
+nltk
+scipy

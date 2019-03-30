@@ -1,4 +1,4 @@
-from builtins import print
+# from builtins import print
 
 import time
 
@@ -28,13 +28,14 @@ class TextSpider(scrapy.Spider):
     def parse(self, response):
         self.driver.get(response.url)
 
-        file_name = int(round(time.time() * 1000))
+        file_name = str(int(round(time.time() * 1000)))
 
-        file = open('test_base_{}.txt'.format(str(file_name)), 'w+')
+        file = open('test_base_{}.txt'.format(file_name), 'w+')
+
+        file_name = file.name
 
         while True:
             gerar_frase = self.driver.find_element_by_id('gerar-frase')
-            print(gerar_frase)
 
             try:
                 gerar_frase.click()
@@ -54,3 +55,5 @@ class TextSpider(scrapy.Spider):
                 break
 
         self.driver.close()
+
+        return file_name

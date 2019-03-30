@@ -7,9 +7,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from nltk.tokenize import word_tokenize
 
+import scipy.stats as stats
+from scipy.stats import norm
+import math
+
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('--dataset', '-d', type=str, required=True,
-                    help='Path to data set directory with multiple plain text files')
+                    help='Path to data set directory with multiple plain text files or a single file (.txt)')
 PARSER.add_argument('--randomize', '-r', type=int,
                     required=False, default=0,
                     help='Number of samples to get random tokens from each text in data set')
@@ -31,6 +35,23 @@ def get_count(tokens):
 def plot_zipf_curve(count, filename):
     X = list(range(len(count)))
     labels, Y = zip(*count)
+
+    plt.figure()
+
+    # Gaussian
+    mu, sigma = norm.fit(Y)
+
+    count, bins, ignored = plt.hist(Y, len(Y), density=True)
+
+    plt.plot(bins, 1 / (sigma * np.sqrt(2 * np.pi)) *
+             np.exp(- (bins - mu) ** 2 / (2 * sigma ** 2)), linewidth=3, color='y')
+
+    plt.xlabel('Frequência')
+    plt.ylabel('Probabilidade')
+    plt.title('Análise da Distribuição do texto ' + filename)
+    plt.tight_layout()
+    save_filepath = 'figs/norm_' + os.path.splitext(filename)[0] + '.png'
+    plt.savefig(save_filepath)
 
     plt.figure()
 
@@ -70,6 +91,15 @@ def analyse_random_texts(dataset_path, num_samples):
     plot_zipf_curve(count, 'randomized.txt')
 
 
+def process_curve(filename):
+    with open(filename) as f:
+        plain = f.read()
+        tokens = tokenize(plain)
+        count = get_count(tokens)
+
+        plot_zipf_curve(count, os.path.split(filename)[1])
+
+
 def main(args):
     dataset = os.fsencode(args.dataset)
 
@@ -77,14 +107,19 @@ def main(args):
         os.makedirs('figs')
 
     if not args.randomize:
-        for _file in os.listdir(dataset):
-            filename = args.dataset + '/' + os.fsdecode(_file)
-            with open(filename) as f:
-                plain = f.read()
-                tokens = tokenize(plain)
-                count = get_count(tokens)
+        if os.path.isdir(dataset):
+            for _file in os.listdir(dataset):
+                filename = args.dataset + '/' + os.fsdecode(_file)
+                process_curve(filename)
 
-                plot_zipf_curve(count, os.path.split(filename)[1])
+        elif os.path.isfile(dataset) and str(dataset).replace('\'', '').split('.')[-1] == 'txt':
+            filename = os.fsdecode(dataset)
+            process_curve(filename)
+        else:
+            raise ValueError(
+                'Invalid File Format. Please, use TXT File.\n'
+                ' You could use lerolero_extractor.py to create a TXT test base')
+
     else:
         analyse_random_texts(args.dataset, args.randomize)
 
