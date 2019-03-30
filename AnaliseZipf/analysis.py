@@ -55,6 +55,16 @@ def plot_zipf_curve(count, filename):
 
     plt.figure()
 
+    # BoxPlot
+
+    fig, ax = plt.subplots()
+    ax.boxplot(Y)
+
+    save_filepath = 'figs/boxplot_' + os.path.splitext(filename)[0] + '.png'
+    plt.savefig(save_filepath)
+
+    plt.figure()
+
     # Zipf
     plt.plot(X, Y)
 
